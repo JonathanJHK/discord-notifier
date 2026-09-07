@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: '0 9 * * *'
-      timezone: 'America/Sao_Paulo'
+    - cron: '30 15 * * *' # Todos os dias às 15:30 UTC (12:30 BRT)
 
 concurrency:
   group: movie-release-notifier
