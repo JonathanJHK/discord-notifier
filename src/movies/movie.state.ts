@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
+// Diretório e arquivo usados para registrar quais filmes já foram enviados.
 const DATA_DIR = 'data';
 const SENT_MOVIES_FILE = `${DATA_DIR}/sent-movies.json`;
 
+// Cria a pasta e o arquivo de controle se eles ainda não existirem.
 async function ensureFileExists() {
   await mkdir(DATA_DIR, { recursive: true });
 
@@ -13,6 +15,7 @@ async function ensureFileExists() {
   }
 }
 
+// Lê a lista de IDs já enviados e valida se o conteúdo é um array numérico.
 export async function getSentMovieIds(): Promise<number[]> {
   await ensureFileExists();
 
@@ -31,6 +34,7 @@ export async function getSentMovieIds(): Promise<number[]> {
   }
 }
 
+// Salva a lista final de IDs de filmes enviados, removendo duplicatas e ordenando.
 export async function saveSentMovieIds(ids: number[]): Promise<void> {
   await ensureFileExists();
 
@@ -43,6 +47,7 @@ export async function saveSentMovieIds(ids: number[]): Promise<void> {
   );
 }
 
+// Adiciona um ID à lista apenas se ele ainda não estiver salvo.
 export async function addSentMovieId(id: number): Promise<void> {
   const ids = await getSentMovieIds();
 

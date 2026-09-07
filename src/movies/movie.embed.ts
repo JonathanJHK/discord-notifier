@@ -1,11 +1,13 @@
 import type { MovieNotification } from './movie.mapper.js';
 
+// Converte a data no formato ISO para uma visualização amigável no Brasil.
 function formatDate(date: string): string {
   const [year, month, day] = date.split('-');
 
   return `${day}/${month}/${year}`;
 }
 
+// Formata a duração em horas e minutos para exibição no embed.
 function formatRuntime(runtime: number | null): string {
   if (!runtime) {
     return 'Não informado';
@@ -25,6 +27,7 @@ function formatRuntime(runtime: number | null): string {
   return `${hours}h ${minutes}min`;
 }
 
+// Limita o texto da sinopse para evitar embeds muito longos no Discord.
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
@@ -33,13 +36,17 @@ function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength - 3)}...`;
 }
 
+// Cria o payload de embed do Discord com as informações do filme.
 export function createMovieEmbed(movie: MovieNotification) {
+  // Concatena os gêneros para uma linha só, ou indica ausência.
   const genres =
     movie.genres.length > 0 ? movie.genres.join(' • ') : 'Não informado';
 
+  // Mostra nota formatada em 1 decimal quando houver avaliação.
   const rating =
     movie.rating > 0 ? `${movie.rating.toFixed(1)}/10` : 'Sem avaliações';
 
+  // Campos visuais do embed: data, nota, duração e gêneros.
   const fields = [
     {
       name: '📅  Estreia no Brasil',
@@ -64,6 +71,7 @@ export function createMovieEmbed(movie: MovieNotification) {
     },
   ];
 
+  // Adiciona link de trailer no embed quando existir.
   if (movie.trailerUrl) {
     fields.push({
       name: '🎞️  Trailer',
@@ -73,8 +81,11 @@ export function createMovieEmbed(movie: MovieNotification) {
   }
 
   return {
-    title: `🎬 ${movie.title}`,
+    author: {
+      name: '🍿 NOVA ESTREIA NOS CINEMAS',
+    },
 
+    title: `🎬 ${movie.title}`,
     url: movie.tmdbUrl,
 
     description: truncate(
@@ -82,7 +93,7 @@ export function createMovieEmbed(movie: MovieNotification) {
       1100,
     ),
 
-    // Vermelho moderno parecido com a referência
+    // Vermelho moderno semelhante ao visual da referência.
     color: 0xff3344,
 
     fields,
