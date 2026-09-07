@@ -1,65 +1,117 @@
 import type { AnimeNotification } from './anime.mapper.js';
 
-function formatDate(date: Date | null): string {
-  if (!date) {
-    return 'Não informado';
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
   }
 
-  return date.toLocaleString('pt-BR', {
+  return text.slice(0, maxLength - 3) + '...';
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
+
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+
     hour: '2-digit',
     minute: '2-digit',
   });
 }
 
 export function createAnimeEmbed(anime: AnimeNotification) {
-  const episode =
-    anime.episode !== null ? `Episódio ${anime.episode}` : 'Novo episódio';
+  const fields = [
+    {
+      name: '📺 Episódio',
+      value: `**${anime.episode}**`,
+      inline: true,
+    },
+
+    {
+      name: '🕒 Lançamento',
+      value: `**${formatDate(anime.releasedAt)}**`,
+      inline: true,
+    },
+
+    {
+      name: '⏱️ Duração',
+      value: anime.duration ? `**${anime.duration} min**` : 'Não informado',
+      inline: true,
+    },
+  ];
+
+  if (anime.score !== null) {
+    fields.push({
+      name: '⭐ Nota',
+      value: `**${anime.score.toFixed(1)}/100**`,
+      inline: true,
+    });
+  }
+
+  if (anime.genres.length > 0) {
+    fields.push({
+      name: '🏷️ Gêneros',
+      value: anime.genres.join(' • '),
+      inline: false,
+    });
+  }
+
+  if (anime.streams.length > 0) {
+    const streams = anime.streams
+      .slice(0, 5)
+      .map((stream) => `[${stream.name}](${stream.url})`)
+      .join(' • ');
+
+    fields.push({
+      name: '▶️ Onde assistir',
+      value: streams,
+      inline: false,
+    });
+  }
+
+  const externalLinks: string[] = [];
+
+  if (anime.malUrl) {
+    externalLinks.push(`[MyAnimeList](${anime.malUrl})`);
+  }
+
+  if (anime.aniListUrl) {
+    externalLinks.push(`[AniList](${anime.aniListUrl})`);
+  }
+
+  externalLinks.push(`[AnimeSchedule](${anime.animeScheduleUrl})`);
+
+  fields.push({
+    name: '🔗 Mais informações',
+    value: externalLinks.join(' • '),
+    inline: false,
+  });
 
   return {
     author: {
-      name: '🎌  N O V O   E P I S Ó D I O',
+      name: '🎌 NOVO EPISÓDIO LEGENDADO',
     },
 
-    title: anime.title,
+    title: `${anime.title} — Episódio ${anime.episode}`,
 
-    url: anime.link ?? undefined,
+    url: anime.animeScheduleUrl,
 
-    description:
-      anime.description ?? 'Novo episódio disponibilizado com legendas.',
+    description: truncate(anime.description, 1000),
 
-    // Roxo
-    color: 0x9146ff,
+    color: 0xff3344,
 
-    fields: [
-      {
-        name: '📺 Episódio',
-        value: `**${episode}**`,
-        inline: true,
-      },
+    fields,
 
-      {
-        name: '🕒 Lançamento',
-        value: `**${formatDate(anime.releasedAt)}**`,
-        inline: true,
-      },
-
-      ...(anime.link
-        ? [
-            {
-              name: '🔗 AnimeSchedule',
-              value: `[Ver anime ↗](${anime.link})`,
-              inline: false,
-            },
-          ]
-        : []),
-    ],
+    thumbnail: anime.posterUrl
+      ? {
+          url: anime.posterUrl,
+        }
+      : undefined,
 
     footer: {
-      text: '🎌 Coreia do Leo • Fonte: AnimeSchedule.net',
+      text: '🎌 Coreia do Leo • Dados: AnimeSchedule.net',
     },
   };
 }

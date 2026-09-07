@@ -21,6 +21,10 @@ export const env = {
     return requiredEnv('TMDB_ACCESS_TOKEN');
   },
 
+  get animeScheduleToken() {
+    return requiredEnv('ANIME_SCHEDULE_TOKEN');
+  },
+
   get discordMoviesWebhookUrl() {
     return requiredEnv('DISCORD_MOVIES_WEBHOOK_URL');
   },

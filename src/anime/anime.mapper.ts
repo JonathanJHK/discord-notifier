@@ -1,56 +1,144 @@
-import type { AnimeRssItem } from './anime-rss.service.js';
+import type {
+  AnimeScheduleDetails,
+  AnimeScheduleTimetable,
+} from './anime-schedule.service.js';
+
+import { getAnimeImageUrl } from './anime-schedule.service.js';
+
+export interface AnimeStream {
+  name: string;
+  url: string;
+}
 
 export interface AnimeNotification {
   id: string;
+
   title: string;
-  episode: number | null;
-  releasedAt: Date | null;
-  link: string | null;
-  description: string | null;
+  romaji: string | null;
+
+  episode: string;
+
+  releasedAt: string;
+
+  duration: number | null;
+
+  genres: string[];
+
+  score: number | null;
+
+  description: string;
+  descriptionOriginal: string;
+
+  posterUrl: string | null;
+
+  animeScheduleUrl: string;
+
+  malUrl: string | null;
+  aniListUrl: string | null;
+
+  streams: AnimeStream[];
 }
 
-function parseTitle(value: string): {
-  animeTitle: string;
-  episode: number | null;
-} {
-  const match = value.match(
-    /^Episode\s+(\d+(?:\.\d+)?)\s+of\s+(.+?)\s+is out!$/i,
-  );
-
-  if (!match) {
-    return {
-      animeTitle: value,
-      episode: null,
-    };
+function cleanHtml(html?: string): string {
+  if (!html) {
+    return 'Descrição não disponível.';
   }
 
-  return {
-    episode: Number(match[1]),
-    animeTitle: match[2].trim(),
-  };
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
 }
 
-export function mapAnimeRssItem(item: AnimeRssItem): AnimeNotification {
-  const parsed = parseTitle(item.title);
+function normalizeUrl(value?: string): string | null {
+  if (!value) {
+    return null;
+  }
 
-  /*
-   * Vamos usar anime + episódio como chave.
-   * Não usamos apenas o anime porque ele lança
-   * um episódio novo toda semana.
-   */
-  const id =
-    parsed.episode !== null
-      ? `${parsed.animeTitle}-episode-${parsed.episode}`
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-      : item.id;
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+
+  return `https://${value}`;
+}
+
+function getEpisodeLabel(timetable: AnimeScheduleTimetable): string {
+  if (
+    timetable.subtractedEpisodeNumber &&
+    timetable.subtractedEpisodeNumber < timetable.episodeNumber
+  ) {
+    return (
+      `${timetable.subtractedEpisodeNumber}` + `–${timetable.episodeNumber}`
+    );
+  }
+
+  return String(timetable.episodeNumber);
+}
+
+export function createAnimeNotificationId(
+  timetable: AnimeScheduleTimetable,
+): string {
+  return [timetable.route, timetable.airType, timetable.episodeNumber].join(
+    ':',
+  );
+}
+
+export function mapAnimeSchedule(
+  timetable: AnimeScheduleTimetable,
+  details?: AnimeScheduleDetails,
+): AnimeNotification {
+  const title =
+    details?.title?.trim() ||
+    details?.names?.english?.trim() ||
+    timetable.title?.trim() ||
+    timetable.english?.trim() ||
+    timetable.romaji?.trim() ||
+    'Título não informado';
+
+  const romaji = details?.names?.romaji ?? timetable.romaji ?? null;
+
+  const originalDescription = cleanHtml(details?.description);
 
   return {
-    id,
-    title: parsed.animeTitle,
-    episode: parsed.episode,
-    releasedAt: item.publishedAt,
-    link: item.link,
-    description: item.description,
+    id: createAnimeNotificationId(timetable),
+
+    title,
+
+    romaji,
+
+    episode: getEpisodeLabel(timetable),
+
+    releasedAt: timetable.episodeDate,
+
+    duration: timetable.lengthMin || null,
+
+    genres: details?.genres?.map((genre) => genre.name) ?? [],
+
+    score: details?.stats?.averageScore ?? null,
+
+    description: originalDescription,
+    descriptionOriginal: originalDescription,
+
+    posterUrl: getAnimeImageUrl(
+      details?.imageVersionRoute ?? timetable.imageVersionRoute,
+    ),
+
+    animeScheduleUrl: `https://animeschedule.net/anime/${timetable.route}`,
+
+    malUrl: normalizeUrl(details?.websites?.mal),
+
+    aniListUrl: normalizeUrl(details?.websites?.aniList),
+
+    streams: (timetable.streams ?? [])
+      .filter((stream) => Boolean(stream.url))
+      .map((stream) => ({
+        name: stream.name,
+        url: normalizeUrl(stream.url) ?? stream.url,
+      })),
   };
 }

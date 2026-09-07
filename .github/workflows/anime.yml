@@ -1,11 +1,10 @@
-name: Movie Release Notifier
+name: Anime Episode Notifier
 
 on:
   workflow_dispatch:
 
   schedule:
-    - cron: '0 12 * * *' # Todos os dias às 12:00 UTC (09:00 BRT)
-    - cron: '0 21 * * *' # Todos os dias às 21:00 UTC (18:00 BRT)
+    - cron: '30 * * * *'
 
 concurrency:
   group: discord-notifier-state
@@ -15,14 +14,14 @@ permissions:
   contents: write
 
 jobs:
-  notify-movies:
-    name: Check movie releases
+  notify-anime:
+    name: Check anime episodes
 
     runs-on: ubuntu-latest
 
     env:
-      TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
-      DISCORD_MOVIES_WEBHOOK_URL: ${{ secrets.DISCORD_MOVIES_WEBHOOK_URL }}
+      ANIME_SCHEDULE_TOKEN: ${{ secrets.ANIME_SCHEDULE_TOKEN }}
+      DISCORD_ANIME_WEBHOOK_URL: ${{ secrets.DISCORD_ANIME_WEBHOOK_URL }}
 
     steps:
       - name: Checkout repository
@@ -42,22 +41,22 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Check movie releases
-        run: npm start
+      - name: Check anime episodes
+        run: npm run anime:start
 
-      - name: Save notification state
+      - name: Save anime notification state
         shell: bash
         run: |
-          if git diff --quiet -- data/sent-movies.json; then
-            echo "Nenhuma alteração no estado dos filmes."
+          if git diff --quiet -- data/sent-anime.json; then
+            echo "Nenhuma alteração no estado dos animes."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/sent-movies.json
-          git commit -m "🔧 chore(updated): Atualizado o estado dos filmes enviados"
+          git add data/sent-anime.json
+          git commit -m "chore: update sent anime state"
 
           echo "Sincronizando com a branch remota..."
 

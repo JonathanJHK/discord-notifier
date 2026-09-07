@@ -1,6 +1,6 @@
-import { getAnimeScheduleFeed } from './anime-rss.service.js';
+import { getAnimeDetails, getSubTimetable } from './anime-schedule.service.js';
 
-import { mapAnimeRssItem } from './anime.mapper.js';
+import { createAnimeNotificationId, mapAnimeSchedule } from './anime.mapper.js';
 
 import { createAnimeEmbed } from './anime.embed.js';
 
@@ -10,63 +10,113 @@ import { sendDiscordWebhook } from '../discord/webhook.service.js';
 
 import { env } from '../config/env.js';
 
-async function main() {
-  console.log('🎌 Buscando lançamentos legendados...\n');
+import { sleep } from '../utils/sleep.js';
 
-  const items = await getAnimeScheduleFeed();
+async function main() {
+  console.log('🎌 Buscando episódios SUB...\n');
+
+  const timetable = await getSubTimetable();
 
   const sentIds = await getSentAnimeIds();
 
   const now = new Date();
 
-  const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  /*
+   * Janela de segurança.
+   * Mesmo se uma execução falhar,
+   * o episódio será recuperado depois.
+   */
+  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  const recentItems = items.filter((item) => {
-    if (!item.publishedAt) {
-      return false;
-    }
+  const recent = timetable.filter((item) => {
+    const episodeDate = new Date(item.episodeDate);
 
-    return item.publishedAt >= last24Hours && item.publishedAt <= now;
+    return item.airType === 'sub' && episodeDate >= start && episodeDate <= now;
   });
 
-  const mapped = recentItems.map(mapAnimeRssItem);
+  const newEpisodes = recent.filter(
+    (item) => !sentIds.includes(createAnimeNotificationId(item)),
+  );
 
-  const newEpisodes = mapped.filter((anime) => !sentIds.includes(anime.id));
-
-  console.log(`📺 ${recentItems.length} episódio(s) recente(s).`);
+  console.log(`📺 ${recent.length} episódio(s) recente(s).`);
 
   console.log(`🆕 ${newEpisodes.length} episódio(s) novo(s).\n`);
 
   if (newEpisodes.length === 0) {
-    console.log('✅ Nenhum episódio novo para enviar.');
+    console.log('✅ Nenhum episódio novo.');
 
     return;
   }
 
   /*
-   * POR ENQUANTO:
-   * enviaremos somente um para
-   * testar o visual.
+   * Cache:
+   * se houver dois episódios
+   * do mesmo anime na mesma execução,
+   * buscamos detalhes apenas uma vez.
    */
-  const anime = newEpisodes[0];
+  const detailsCache = new Map();
 
-  console.log(`🎌 Testando: ${anime.title} - ` + `Episódio ${anime.episode}`);
+  for (const timetableItem of newEpisodes) {
+    try {
+      console.log(
+        `🎌 Processando: ` +
+          `${timetableItem.title} ` +
+          `- Episódio ` +
+          `${timetableItem.episodeNumber}`,
+      );
 
-  const embed = createAnimeEmbed(anime);
+      let details = detailsCache.get(timetableItem.route);
 
-  await sendDiscordWebhook(env.discordAnimeWebhookUrl, {
-    username: '🎌 Central de Animes',
+      if (!details) {
+        try {
+          details = await getAnimeDetails(timetableItem.route);
 
-    embeds: [embed],
-  });
+          detailsCache.set(timetableItem.route, details);
+        } catch (error) {
+          /*
+           * Importante:
+           * se os detalhes falharem,
+           * ainda conseguimos enviar
+           * usando apenas o timetable.
+           */
+          console.warn(
+            `⚠️ Não foi possível buscar ` +
+              `detalhes de ${timetableItem.title}.`,
+          );
+        }
+      }
 
-  await addSentAnimeId(anime.id);
+      const anime = mapAnimeSchedule(timetableItem, details);
 
-  console.log(`✅ ${anime.title} enviado para o Discord!`);
+      const embed = createAnimeEmbed(anime);
+
+      await sendDiscordWebhook(env.discordAnimeWebhookUrl, {
+        username: '🎌 Central de CoreiaAnimes',
+
+        embeds: [embed],
+      });
+
+      /*
+       * Só marca como enviado
+       * DEPOIS do Discord confirmar.
+       */
+      await addSentAnimeId(anime.id);
+
+      console.log(
+        `✅ ${anime.title} - ` + `Episódio ${anime.episode} enviado!`,
+      );
+
+      await sleep(1500);
+    } catch (error) {
+      console.error(`❌ Erro ao processar ` + `${timetableItem.title}:`, error);
+    }
+  }
+
+  console.log('\n🏁 Anime Notifier finalizado.');
 }
 
 main().catch((error) => {
-  console.error('❌ Erro:', error);
+  console.error('❌ Erro geral:', error);
 
   process.exit(1);
 });
