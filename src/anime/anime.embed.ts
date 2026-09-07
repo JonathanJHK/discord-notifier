@@ -1,5 +1,6 @@
 import type { AnimeNotification } from './anime.mapper.js';
 
+// Limita o texto da descrição para manter o embed dentro dos limites do Discord.
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
@@ -8,6 +9,7 @@ function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength - 3) + '...';
 }
 
+// Converte a data ISO para um formato legível em horário de São Paulo.
 function formatDate(value: string): string {
   return new Date(value).toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -21,7 +23,9 @@ function formatDate(value: string): string {
   });
 }
 
+// Monta o payload do embed do Discord com as principais informações do episódio.
 export function createAnimeEmbed(anime: AnimeNotification) {
+  // Os campos em destaque ajudam a organizar a mensagem de forma visual.
   const fields = [
     {
       name: '📺 Episódio',

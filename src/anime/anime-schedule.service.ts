@@ -1,10 +1,13 @@
 import { env } from '../config/env.js';
 
+// URL base da API do AnimeSchedule para consultar horários e detalhes dos animes.
 const ANIME_SCHEDULE_BASE_URL = 'https://animeschedule.net/api/v3';
 
+// Prefixo usado para montar imagens de capa dos animes.
 const ANIME_SCHEDULE_IMAGE_BASE_URL =
   'https://img.animeschedule.net/production/assets/public/img/';
 
+// Categoria usada pelo AnimeSchedule para classificar o tipo de mídia do anime.
 export interface AnimeScheduleCategory {
   name: string;
   route: string;
@@ -92,10 +95,12 @@ export interface AnimeScheduleDetails {
   imageVersionRoute?: string;
 }
 
+// Pequena pausa usada entre tentativas de requisição em caso de falha temporária.
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Requisição com retry para lidar com throttling, timeouts e erros 5xx da API.
 async function fetchWithRetry(url: URL, attempts = 5): Promise<Response> {
   let lastError: unknown;
 
@@ -165,6 +170,7 @@ async function fetchWithRetry(url: URL, attempts = 5): Promise<Response> {
   throw lastError ?? new Error('Falha ao consultar AnimeSchedule.');
 }
 
+// Consulta o calendário de episódios legendados no fuso de São Paulo.
 export async function getSubTimetable(): Promise<AnimeScheduleTimetable[]> {
   const url = new URL(`${ANIME_SCHEDULE_BASE_URL}/timetables/sub`);
 
@@ -195,6 +201,7 @@ export async function getSubTimetable(): Promise<AnimeScheduleTimetable[]> {
   return data.filter((anime) => anime.airType === 'sub');
 }
 
+// Monta a URL completa da imagem do anime a partir do caminho retornado pela API.
 export function getAnimeImageUrl(imageVersionRoute?: string): string | null {
   if (!imageVersionRoute) {
     return null;
@@ -203,6 +210,7 @@ export function getAnimeImageUrl(imageVersionRoute?: string): string | null {
   return ANIME_SCHEDULE_IMAGE_BASE_URL + imageVersionRoute;
 }
 
+// Busca os detalhes completos do anime por rota, incluindo gêneros, sinopse e links externos.
 export async function getAnimeDetails(
   route: string,
 ): Promise<AnimeScheduleDetails> {

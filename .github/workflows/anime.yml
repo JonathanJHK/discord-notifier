@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: '30 * * * *'
+    - cron: '30 */2 * * *'
 
 concurrency:
   group: discord-notifier-state
@@ -56,7 +56,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add data/sent-anime.json
-          git commit -m "chore: update sent anime state"
+          git commit -m "🔧 chore(updated): Atualizado o estado dos animes enviados"
 
           echo "Sincronizando com a branch remota..."
 

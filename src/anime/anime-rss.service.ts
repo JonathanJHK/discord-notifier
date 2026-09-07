@@ -1,9 +1,12 @@
 import Parser from 'rss-parser';
 
+// RSS que informa os episódios legendados do Anime Schedule.
 const ANIME_SCHEDULE_SUB_RSS = 'https://animeschedule.net/subrss.xml';
 
+// Parser genérico para interpretar feeds RSS/XML.
 const parser = new Parser();
 
+// Estrutura mínima de um item do feed para uso no bot.
 export interface AnimeRssItem {
   id: string;
   title: string;
@@ -12,10 +15,12 @@ export interface AnimeRssItem {
   description: string | null;
 }
 
+// Delay simples para aplicar retry com intervalo entre tentativas.
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Busca o XML do RSS com retries para casos de timeout, 429 ou falha temporária.
 async function fetchRssWithRetry(attempts = 5): Promise<string> {
   let lastError: unknown;
 

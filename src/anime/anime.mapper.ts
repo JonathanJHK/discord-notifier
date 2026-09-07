@@ -5,11 +5,13 @@ import type {
 
 import { getAnimeImageUrl } from './anime-schedule.service.js';
 
+// Estrutura dos links de streaming que aparecem no bloco de "Onde assistir".
 export interface AnimeStream {
   name: string;
   url: string;
 }
 
+// Representa o objeto pronto para envio no Discord, já com dados limpos e formatados.
 export interface AnimeNotification {
   id: string;
 
@@ -39,6 +41,7 @@ export interface AnimeNotification {
   streams: AnimeStream[];
 }
 
+// Remove marcações HTML e converte entidades para texto legível em uma descrição.
 function cleanHtml(html?: string): string {
   if (!html) {
     return 'Descrição não disponível.';
@@ -55,6 +58,7 @@ function cleanHtml(html?: string): string {
     .trim();
 }
 
+// Garante que links externos tenham protocolo HTTP/HTTPS para funcionar corretamente.
 function normalizeUrl(value?: string): string | null {
   if (!value) {
     return null;
@@ -67,6 +71,7 @@ function normalizeUrl(value?: string): string | null {
   return `https://${value}`;
 }
 
+// Algumas séries usam um intervalo de episódios (ex.: 12–13), então esse label melhora a leitura.
 function getEpisodeLabel(timetable: AnimeScheduleTimetable): string {
   if (
     timetable.subtractedEpisodeNumber &&
@@ -80,6 +85,7 @@ function getEpisodeLabel(timetable: AnimeScheduleTimetable): string {
   return String(timetable.episodeNumber);
 }
 
+// Cria um identificador único para cada episódio notificado, evitando duplicidade.
 export function createAnimeNotificationId(
   timetable: AnimeScheduleTimetable,
 ): string {
@@ -88,10 +94,12 @@ export function createAnimeNotificationId(
   );
 }
 
+// Transforma os dados brutos do timetable em um objeto pronto para renderizar o embed.
 export function mapAnimeSchedule(
   timetable: AnimeScheduleTimetable,
   details?: AnimeScheduleDetails,
 ): AnimeNotification {
+  // Prioriza o nome completo do anime e usa fallback para o título original quando necessário.
   const title =
     details?.title?.trim() ||
     details?.names?.english?.trim() ||

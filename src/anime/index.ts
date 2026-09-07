@@ -12,6 +12,7 @@ import { env } from '../config/env.js';
 
 import { sleep } from '../utils/sleep.js';
 
+// Fluxo principal do notificador de anime: busca o cronograma, filtra episódios novos e envia para o Discord.
 async function main() {
   console.log('🎌 Buscando episódios SUB...\n');
 

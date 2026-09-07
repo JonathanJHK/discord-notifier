@@ -1,7 +1,9 @@
 import { sleep } from '../utils/sleep.js';
 
+// Endpoint GraphQL do AniList usado para consultar agendamentos de episódios.
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 
+// Campos de título retornados pela API do AniList.
 export interface AniListTitle {
   romaji: string | null;
   english: string | null;
@@ -61,6 +63,7 @@ interface AniListResponse {
   }[];
 }
 
+// Query GraphQL responsável por buscar agendamentos de episódios em um intervalo de tempo.
 const query = `
   query (
     $page: Int,
@@ -118,6 +121,7 @@ const query = `
   }
 `;
 
+// Faz a requisição ao endpoint do AniList com retries e timeout para reduzir falhas temporárias.
 async function requestAniList(
   start: number,
   end: number,
@@ -209,6 +213,7 @@ async function requestAniList(
   throw lastError ?? new Error('Falha ao acessar AniList.');
 }
 
+// Busca todos os episódios que foram ao ar dentro do intervalo informado, ignorando conteúdo adulto.
 export async function getAiredEpisodes(
   start: number,
   end: number,
