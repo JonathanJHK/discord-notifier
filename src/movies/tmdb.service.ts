@@ -21,6 +21,38 @@ interface TmdbMovieResponse {
   total_results: number;
 }
 
+export interface TmdbGenre {
+  id: number;
+  name: string;
+}
+
+export interface TmdbVideo {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+}
+
+export interface TmdbMovieDetails {
+  id: number;
+  title: string;
+  original_title: string;
+  overview: string;
+  release_date: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  vote_count: number;
+  runtime: number | null;
+  genres: TmdbGenre[];
+
+  videos?: {
+    results: TmdbVideo[];
+  };
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -90,4 +122,24 @@ export async function getBrazilTheatricalReleases(
   const data = (await response.json()) as TmdbMovieResponse;
 
   return data.results;
+}
+
+export async function getMovieDetails(
+  movieId: number,
+): Promise<TmdbMovieDetails> {
+  const url = new URL(`${TMDB_BASE_URL}/movie/${movieId}`);
+
+  url.searchParams.set('language', 'pt-BR');
+  url.searchParams.set('append_to_response', 'videos');
+
+  const response = await fetchWithRetry(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `Erro ao buscar detalhes do filme ${movieId}: ` +
+        `${response.status} ${response.statusText}`,
+    );
+  }
+
+  return (await response.json()) as TmdbMovieDetails;
 }
