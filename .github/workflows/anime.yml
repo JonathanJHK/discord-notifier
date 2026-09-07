@@ -22,6 +22,8 @@ jobs:
     env:
       ANIME_SCHEDULE_TOKEN: ${{ secrets.ANIME_SCHEDULE_TOKEN }}
       DISCORD_ANIME_WEBHOOK_URL: ${{ secrets.DISCORD_ANIME_WEBHOOK_URL }}
+      LARA_ACCESS_KEY_ID: ${{ secrets.LARA_ACCESS_KEY_ID }}
+      LARA_ACCESS_KEY_SECRET: ${{ secrets.LARA_ACCESS_KEY_SECRET }}
 
     steps:
       - name: Checkout repository
@@ -47,7 +49,9 @@ jobs:
       - name: Save anime notification state
         shell: bash
         run: |
-          if git diff --quiet -- data/sent-anime.json; then
+          if git diff --quiet -- \
+            data/sent-anime.json \
+            data/anime-translations.json; then
             echo "Nenhuma alteração no estado dos animes."
             exit 0
           fi
@@ -55,7 +59,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/sent-anime.json
+          git add \
+            data/sent-anime.json \
+            data/anime-translations.json
           git commit -m "🔧 chore(updated): Atualizado o estado dos animes enviados"
 
           echo "Sincronizando com a branch remota..."

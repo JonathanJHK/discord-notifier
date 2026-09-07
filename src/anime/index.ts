@@ -8,6 +8,8 @@ import { addSentAnimeId, getSentAnimeIds } from './anime.state.js';
 
 import { sendDiscordWebhook } from '../discord/webhook.service.js';
 
+import { getAnimeDescriptionPtBr } from './anime.translation.js';
+
 import { env } from '../config/env.js';
 
 import { sleep } from '../utils/sleep.js';
@@ -88,6 +90,11 @@ async function main() {
       }
 
       const anime = mapAnimeSchedule(timetableItem, details);
+
+      anime.description = await getAnimeDescriptionPtBr(
+        timetableItem.route,
+        anime.descriptionOriginal,
+      );
 
       const embed = createAnimeEmbed(anime);
 

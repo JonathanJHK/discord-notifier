@@ -32,4 +32,12 @@ export const env = {
   get discordAnimeWebhookUrl() {
     return requiredEnv('DISCORD_ANIME_WEBHOOK_URL');
   },
+
+  get laraAccessKeyId() {
+    return process.env.LARA_ACCESS_KEY_ID?.trim() || null;
+  },
+
+  get laraAccessKeySecret() {
+    return process.env.LARA_ACCESS_KEY_SECRET?.trim() || null;
+  },
 };

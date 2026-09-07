@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/JonathanJHK/discord-notifier#readme",
   "dependencies": {
+    "@translated/lara": "^1.14.0",
     "dotenv": "^17.4.2",
     "rss-parser": "^3.13.0"
   },
