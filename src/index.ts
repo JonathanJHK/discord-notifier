@@ -86,7 +86,7 @@ async function main() {
       console.log(`✅ ${movie.title} enviado com sucesso!`);
 
       // Pausa para evitar disparar muitas requisições em sequência.
-      await sleep(1500);
+      await sleep(2500);
     } catch (error) {
       failureCount++;
 

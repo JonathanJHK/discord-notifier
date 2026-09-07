@@ -107,7 +107,7 @@ async function main() {
         `✅ ${anime.title} - ` + `Episódio ${anime.episode} enviado!`,
       );
 
-      await sleep(1500);
+      await sleep(2500);
     } catch (error) {
       console.error(`❌ Erro ao processar ` + `${timetableItem.title}:`, error);
     }

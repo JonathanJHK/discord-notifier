@@ -1,4 +1,4 @@
-import { sleep } from '../utils/sleep.js';
+import { sleep } from '../src/utils/sleep.js';
 
 // Endpoint GraphQL do AniList usado para consultar agendamentos de episódios.
 const ANILIST_API_URL = 'https://graphql.anilist.co';

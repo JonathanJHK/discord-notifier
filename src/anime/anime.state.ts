@@ -1,9 +1,10 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
+// Pasta e arquivo usados para guardar os IDs dos episódios já enviados ao Discord.
 const DATA_DIR = 'data';
-
 const SENT_ANIME_FILE = `${DATA_DIR}/sent-anime.json`;
 
+// Cria a pasta e o arquivo de controle caso ainda não existam no projeto.
 async function ensureFileExists() {
   await mkdir(DATA_DIR, {
     recursive: true,
@@ -16,6 +17,7 @@ async function ensureFileExists() {
   }
 }
 
+// Lê a lista de episódios já enviados e valida se o conteúdo é um array de strings.
 export async function getSentAnimeIds(): Promise<string[]> {
   await ensureFileExists();
 
@@ -34,6 +36,7 @@ export async function getSentAnimeIds(): Promise<string[]> {
   }
 }
 
+// Adiciona um novo ID de episódio apenas quando ele ainda não foi enviado antes.
 export async function addSentAnimeId(id: string): Promise<void> {
   const ids = await getSentAnimeIds();
 
