@@ -1,5 +1,3 @@
-import { env } from '../config/env.js';
-
 // Tipos usados para montar a estrutura de embed do Discord.
 interface DiscordEmbedField {
   name: string;
@@ -40,9 +38,10 @@ interface DiscordWebhookPayload {
 
 // Envia uma mensagem ou embed para o webhook configurado no Discord.
 export async function sendDiscordWebhook(
+  webhookUrl: string,
   payload: DiscordWebhookPayload,
 ): Promise<void> {
-  const response = await fetch(env.discordMoviesWebhookUrl, {
+  const response = await fetch(webhookUrl, {
     method: 'POST',
 
     headers: {
@@ -52,7 +51,6 @@ export async function sendDiscordWebhook(
     body: JSON.stringify(payload),
   });
 
-  // Se a resposta não for bem-sucedida, lança erro com detalhes do retorno.
   if (!response.ok) {
     const responseBody = await response.text();
 

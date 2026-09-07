@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import { sleep } from '../utils/sleep.js';
 
 // URL base da API do TMDB para montar as rotas de requisição.
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -59,11 +60,6 @@ export interface TmdbMovieDetails {
   vote_count: number;
   runtime: number | null;
   genres: TmdbGenre[];
-}
-
-// Função auxiliar para esperar um tempo antes de tentar novamente.
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Faz a requisição com tentativa de recuperação por falha temporária.

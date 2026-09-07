@@ -13,6 +13,7 @@ import { sendDiscordWebhook } from './discord/webhook.service.js';
 
 import { addDays, getBrazilDate } from './utils/date.js';
 
+import { env } from './config/env.js';
 import { sleep } from './utils/sleep.js';
 
 // Ponto principal de execução do bot.
@@ -72,7 +73,7 @@ async function main() {
       const embed = createMovieEmbed(movie);
 
       // Envia a mensagem para o webhook do Discord.
-      await sendDiscordWebhook({
+      await sendDiscordWebhook(env.discordMoviesWebhookUrl, {
         username: '🎬 Central da CineCoreia',
         embeds: [embed],
       });

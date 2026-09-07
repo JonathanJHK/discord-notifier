@@ -6,22 +6,26 @@ dotenv.config({
   override: true,
 });
 
-// Lê os tokens/URLs necessários para comunicação com TMDB e Discord.
-const tmdbAccessToken = process.env.TMDB_ACCESS_TOKEN?.trim();
-const discordMoviesWebhookUrl = process.env.DISCORD_MOVIES_WEBHOOK_URL?.trim();
+function requiredEnv(name: string): string {
+  const value = process.env[name]?.trim();
 
-// Garante que a chave do TMDB foi configurada antes de qualquer requisição.
-if (!tmdbAccessToken) {
-  throw new Error('TMDB_ACCESS_TOKEN não foi informado.');
+  if (!value) {
+    throw new Error(`${name} não foi informado.`);
+  }
+
+  return value;
 }
 
-// Garante que a URL do webhook do Discord foi configurada antes do envio.
-if (!discordMoviesWebhookUrl) {
-  throw new Error('DISCORD_MOVIES_WEBHOOK_URL não foi informado.');
-}
-
-// Exporta um objeto centralizado com as variáveis usadas pelo projeto.
 export const env = {
-  tmdbAccessToken,
-  discordMoviesWebhookUrl,
+  get tmdbAccessToken() {
+    return requiredEnv('TMDB_ACCESS_TOKEN');
+  },
+
+  get discordMoviesWebhookUrl() {
+    return requiredEnv('DISCORD_MOVIES_WEBHOOK_URL');
+  },
+
+  get discordAnimeWebhookUrl() {
+    return requiredEnv('DISCORD_ANIME_WEBHOOK_URL');
+  },
 };
