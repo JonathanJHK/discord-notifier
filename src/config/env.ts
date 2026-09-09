@@ -7,6 +7,7 @@ dotenv.config({
 });
 
 function requiredEnv(name: string): string {
+  // Valida a configuração no momento em que ela é acessada, evitando iniciar uma chamada sem credencial.
   const value = process.env[name]?.trim();
 
   if (!value) {
@@ -17,6 +18,7 @@ function requiredEnv(name: string): string {
 }
 
 export const env = {
+  // Tokens obrigatórios são expostos como getters para validar apenas o fluxo que está sendo executado.
   get tmdbAccessToken() {
     return requiredEnv('TMDB_ACCESS_TOKEN');
   },
@@ -33,7 +35,12 @@ export const env = {
     return requiredEnv('DISCORD_ANIME_WEBHOOK_URL');
   },
 
+  get discordMangaWebhookUrl() {
+    return requiredEnv('DISCORD_MANGA_WEBHOOK_URL');
+  },
+
   get laraAccessKeyId() {
+    // Lara é opcional: sem as duas credenciais, o texto original é preservado.
     return process.env.LARA_ACCESS_KEY_ID?.trim() || null;
   },
 

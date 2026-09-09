@@ -9,6 +9,8 @@
     "start": "node dist/index.js",
     "anime:dev": "tsx src/anime/index.ts",
     "anime:start": "node dist/anime/index.js",
+    "manga:dev": "tsx src/manga/index.ts",
+    "manga:start": "node dist/manga/index.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
