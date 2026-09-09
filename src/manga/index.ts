@@ -13,6 +13,7 @@ import { sendDiscordWebhook } from '../discord/webhook.service.js';
 import { createMangaEmbed } from './manga.embed.js';
 
 import { addSentMangaId, getSentMangaIds } from './manga.state.js';
+import { getMangaDescriptionPtBr } from './manga.translation.js';
 
 async function main(): Promise<void> {
   // O fluxo descobre candidatos, remove duplicados persistidos e envia os detalhes formatados.
@@ -58,6 +59,17 @@ async function main(): Promise<void> {
       const details = await getMangaDetails(candidate.malId);
 
       const manga = mapMangaDetails(details);
+
+      /**
+       * Traduz a sinopse antes da criação do embed.
+       *
+       * Caso Lara esteja indisponível,
+       * retorna automaticamente o texto original.
+       */
+      manga.synopsis = await getMangaDescriptionPtBr(
+        manga.malId,
+        manga.synopsis,
+      );
 
       const embed = createMangaEmbed(manga);
 
