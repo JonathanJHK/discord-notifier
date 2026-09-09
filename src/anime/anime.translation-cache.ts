@@ -46,6 +46,7 @@ export async function getCachedTranslation(
   route: string,
   original: string,
 ): Promise<string | null> {
+  // A rota identifica o anime e o hash impede reutilizar tradução de uma sinopse antiga.
   const cache = await readCache();
 
   const cached = cache[route];

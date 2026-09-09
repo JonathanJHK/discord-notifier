@@ -2,6 +2,7 @@ import type { MovieNotification } from './movie.mapper.js';
 
 // Converte a data no formato ISO para uma visualização amigável no Brasil.
 function formatDate(date: string): string {
+  // Converte a data ISO do TMDB para o formato brasileiro exibido no Discord.
   const [year, month, day] = date.split('-');
 
   return `${day}/${month}/${year}`;
@@ -9,6 +10,7 @@ function formatDate(date: string): string {
 
 // Formata a duração em horas e minutos para exibição no embed.
 function formatRuntime(runtime: number | null): string {
+  // Divide minutos em horas somente para melhorar a leitura da duração.
   if (!runtime) {
     return 'Não informado';
   }
@@ -29,6 +31,7 @@ function formatRuntime(runtime: number | null): string {
 
 // Limita o texto da sinopse para evitar embeds muito longos no Discord.
 function truncate(text: string, maxLength: number): string {
+  // Evita ultrapassar o tamanho de descrição suportado pelo embed.
   if (text.length <= maxLength) {
     return text;
   }
@@ -38,6 +41,7 @@ function truncate(text: string, maxLength: number): string {
 
 // Cria o payload de embed do Discord com as informações do filme.
 export function createMovieEmbed(movie: MovieNotification) {
+  // Monta exclusivamente a apresentação do filme, sem alterar os dados mapeados.
   // Concatena os gêneros para uma linha só, ou indica ausência.
   const genres =
     movie.genres.length > 0 ? movie.genres.join(' • ') : 'Não informado';
@@ -88,11 +92,11 @@ export function createMovieEmbed(movie: MovieNotification) {
     title: `🎬 ${movie.title}`,
     url: movie.tmdbUrl,
 
-    description: truncate(
-      movie.overview || 'Sinopse não disponível em português.',
-      1100,
-    ),
-
+    description:
+      `${truncate(
+        movie.overview || 'Sinopse não disponível em português.',
+        1100,
+      )}\n\n` + '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n',
     // Vermelho moderno semelhante ao visual da referência.
     color: 0xff3344,
 

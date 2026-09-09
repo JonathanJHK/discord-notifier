@@ -16,6 +16,7 @@ import { sleep } from '../utils/sleep.js';
 
 // Fluxo principal do notificador de anime: busca o cronograma, filtra episódios novos e envia para o Discord.
 async function main() {
+  // Busca, enriquece, traduz e envia episódios sem marcar falhas como concluídas.
   console.log('🎌 Buscando episódios SUB...\n');
 
   const timetable = await getSubTimetable();

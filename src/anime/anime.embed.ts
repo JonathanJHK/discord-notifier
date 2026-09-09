@@ -2,6 +2,7 @@ import type { AnimeNotification } from './anime.mapper.js';
 
 // Limita o texto da descrição para manter o embed dentro dos limites do Discord.
 function truncate(text: string, maxLength: number): string {
+  // O limite protege o embed contra descrições maiores que o permitido pelo Discord.
   if (text.length <= maxLength) {
     return text;
   }
@@ -11,6 +12,7 @@ function truncate(text: string, maxLength: number): string {
 
 // Converte a data ISO para um formato legível em horário de São Paulo.
 function formatDate(value: string): string {
+  // A conversão é feita somente na apresentação; o valor original permanece no modelo.
   return new Date(value).toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
 
@@ -25,6 +27,7 @@ function formatDate(value: string): string {
 
 // Monta o payload do embed do Discord com as principais informações do episódio.
 export function createAnimeEmbed(anime: AnimeNotification) {
+  // O payload é montado separado do mapper para manter regras de apresentação isoladas.
   // Os campos em destaque ajudam a organizar a mensagem de forma visual.
   const fields = [
     {
@@ -102,7 +105,9 @@ export function createAnimeEmbed(anime: AnimeNotification) {
 
     url: anime.animeScheduleUrl,
 
-    description: truncate(anime.description, 1000),
+    description:
+      `${truncate(anime.description, 1000)}\n\n` +
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n',
 
     color: 0xff3344,
 

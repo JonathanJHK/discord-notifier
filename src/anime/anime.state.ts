@@ -6,6 +6,7 @@ const SENT_ANIME_FILE = `${DATA_DIR}/sent-anime.json`;
 
 // Cria a pasta e o arquivo de controle caso ainda não existam no projeto.
 async function ensureFileExists() {
+  // A inicialização idempotente permite executar o bot em um clone recém-criado.
   await mkdir(DATA_DIR, {
     recursive: true,
   });
@@ -38,6 +39,7 @@ export async function getSentAnimeIds(): Promise<string[]> {
 
 // Adiciona um novo ID de episódio apenas quando ele ainda não foi enviado antes.
 export async function addSentAnimeId(id: string): Promise<void> {
+  // O estado só é alterado após o envio confirmado pelo webhook.
   const ids = await getSentAnimeIds();
 
   if (ids.includes(id)) {

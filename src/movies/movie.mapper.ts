@@ -5,6 +5,7 @@ const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 // Estrutura final que será usada para criar o embed do Discord.
 export interface MovieNotification {
+  // Modelo de apresentação independente do payload específico do TMDB.
   id: number;
   title: string;
   originalTitle: string;
@@ -22,6 +23,7 @@ export interface MovieNotification {
 
 // Procura o melhor trailer disponível: preferencialmente oficial e do YouTube.
 function findTrailer(videos: TmdbVideo[] = []): TmdbVideo | undefined {
+  // Prioriza trailer oficial no YouTube, mas aceita um trailer comum como fallback.
   const officialTrailer = videos.find(
     (video) =>
       video.site === 'YouTube' && video.type === 'Trailer' && video.official,
@@ -42,6 +44,7 @@ export function mapMovieDetails(
   brazilReleaseDate: string,
   videos: TmdbVideo[] = [],
 ): MovieNotification {
+  // Centraliza fallbacks de texto, mídia e links antes da criação do embed.
   const trailer = findTrailer(videos);
 
   return {

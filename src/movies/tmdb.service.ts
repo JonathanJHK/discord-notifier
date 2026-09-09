@@ -64,6 +64,7 @@ export interface TmdbMovieDetails {
 
 // Le o cabeçalho Retry-After do TMDB para respeitar o tempo de espera recomendado pelo servidor.
 function getRetryAfterMs(response: Response): number {
+  // Usa a orientação do servidor para evitar novas chamadas durante o rate limit.
   const retryAfter = response.headers.get('retry-after');
 
   if (!retryAfter) {
@@ -81,6 +82,7 @@ function getRetryAfterMs(response: Response): number {
 
 // Faz a requisição à API do TMDB com tentativas extras para tolerar falhas temporárias, rate limit e timeouts.
 async function fetchWithRetry(url: URL, attempts = 5): Promise<Response> {
+  // Todas as rotas do TMDB compartilham autenticação, timeout e política de retry.
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
@@ -271,6 +273,7 @@ async function getMovieVideos(
   movieId: number,
   language: string,
 ): Promise<TmdbVideo[]> {
+  // Busca vídeos por idioma para permitir o fallback pt-BR -> en-US.
   const url = new URL(`${TMDB_BASE_URL}/movie/${movieId}/videos`);
 
   // Define o idioma da busca do vídeo para tentar priorizar trailers em português antes do fallback para inglês.
@@ -293,6 +296,7 @@ async function getMovieVideos(
 
 // Verifica se existe pelo menos um trailer válido no YouTube para o filme.
 function hasYouTubeTrailer(videos: TmdbVideo[]): boolean {
+  // Só considera trailers reproduzíveis no YouTube para decidir se o fallback é necessário.
   return videos.some(
     (video) => video.site === 'YouTube' && video.type === 'Trailer',
   );

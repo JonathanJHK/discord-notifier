@@ -13,6 +13,7 @@ export interface AnimeStream {
 
 // Representa o objeto pronto para envio no Discord, já com dados limpos e formatados.
 export interface AnimeNotification {
+  // Modelo interno estável; o embed não precisa conhecer o formato da API externa.
   id: string;
 
   title: string;
@@ -89,6 +90,7 @@ function getEpisodeLabel(timetable: AnimeScheduleTimetable): string {
 export function createAnimeNotificationId(
   timetable: AnimeScheduleTimetable,
 ): string {
+  // A combinação da rota, tipo de exibição e episódio identifica uma notificação.
   return [timetable.route, timetable.airType, timetable.episodeNumber].join(
     ':',
   );
@@ -99,6 +101,7 @@ export function mapAnimeSchedule(
   timetable: AnimeScheduleTimetable,
   details?: AnimeScheduleDetails,
 ): AnimeNotification {
+  // Dados do timetable continuam suficientes para notificar mesmo se os detalhes falharem.
   // Prioriza o nome completo do anime e usa fallback para o título original quando necessário.
   const title =
     details?.title?.trim() ||

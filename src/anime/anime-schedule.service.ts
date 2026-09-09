@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import { sleep } from '../utils/sleep.js';
 
 // URL base da API do AnimeSchedule para consultar horários e detalhes dos animes.
 const ANIME_SCHEDULE_BASE_URL = 'https://animeschedule.net/api/v3';
@@ -14,12 +15,14 @@ export interface AnimeScheduleCategory {
 }
 
 export interface AnimeScheduleStream {
+  // Serviço de streaming associado ao episódio no calendário.
   platform: string;
   url: string;
   name: string;
 }
 
 export interface AnimeScheduleTimetable {
+  // Registro de episódio recebido da API do AnimeSchedule.
   title: string;
   route: string;
 
@@ -75,6 +78,7 @@ export interface AnimeScheduleWebsites {
 }
 
 export interface AnimeScheduleDetails {
+  // Informações complementares usadas para enriquecer a notificação.
   id: string;
   title: string;
   route: string;
@@ -95,13 +99,9 @@ export interface AnimeScheduleDetails {
   imageVersionRoute?: string;
 }
 
-// Pequena pausa usada entre tentativas de requisição em caso de falha temporária.
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 // Requisição com retry para lidar com throttling, timeouts e erros 5xx da API.
 async function fetchWithRetry(url: URL, attempts = 5): Promise<Response> {
+  // Centraliza autenticação e retry para que todas as rotas tenham o mesmo comportamento.
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {

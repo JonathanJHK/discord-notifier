@@ -1,5 +1,6 @@
 // Retorna a data atual no fuso de São Paulo, em formato ISO compatível com a API do TMDB.
 export function getBrazilDate(): string {
+  // formatToParts evita depender da ordem/localização da string formatada.
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -20,6 +21,7 @@ export function getBrazilDate(): string {
 
 // Soma ou subtrai dias de uma data no formato YYYY-MM-DD.
 export function addDays(date: string, days: number): string {
+  // UTC impede que mudanças de horário local alterem o dia calculado.
   const [year, month, day] = date.split('-').map(Number);
 
   const value = new Date(Date.UTC(year, month - 1, day + days));

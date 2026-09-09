@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 let translator: Translator | null = null;
 
 function getTranslator(): Translator | null {
+  // A instância é criada sob demanda para não exigir credenciais em fluxos que não traduzem texto.
   if (translator) {
     return translator;
   }
@@ -25,6 +26,7 @@ function getTranslator(): Translator | null {
 }
 
 export async function translateToPtBr(text: string): Promise<string | null> {
+  // Texto vazio não gera uma chamada inútil nem uma tradução vazia.
   if (!text.trim()) {
     return null;
   }

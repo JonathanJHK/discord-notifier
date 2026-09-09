@@ -1,4 +1,5 @@
 interface DiscordEmbedField {
+  // Campo individual exibido dentro de um embed do Discord.
   name: string;
   value: string;
   inline?: boolean;
@@ -31,6 +32,7 @@ interface DiscordEmbed {
 }
 
 interface DiscordWebhookPayload {
+  // Payload mínimo aceito pelo endpoint de webhook utilizado pelo bot.
   username?: string;
   content?: string;
   embeds?: DiscordEmbed[];
@@ -42,6 +44,7 @@ interface DiscordRateLimitResponse {
 }
 
 function sleep(ms: number): Promise<void> {
+  // Mantém a espera do webhook local ao serviço e reutilizável entre retries.
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -85,6 +88,7 @@ export async function sendDiscordWebhook(
   payload: DiscordWebhookPayload,
   attempts = 5,
 ): Promise<void> {
+  // Diferencia falhas temporárias, que podem ser repetidas, de erros permanentes do payload.
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
@@ -146,15 +150,6 @@ export async function sendDiscordWebhook(
         );
       }
 
-      /*
-       * Outros 4xx normalmente significam:
-       *
-       * 400 -> payload inválido
-       * 401/403 -> webhook/permissão
-       * 404 -> webhook removido
-       *
-       * Fazer retry não resolveria.
-       */
       throw new Error(
         `Erro permanente ao enviar webhook: ` +
           `${response.status} ` +
