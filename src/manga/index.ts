@@ -51,10 +51,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Processa uma obra por execução para controlar o volume de chamadas e mensagens enviadas.
-  const candidatesToSend = newCandidates.slice(0, 1);
-
-  for (const candidate of candidatesToSend) {
+  for (const candidate of newCandidates) {
     console.log('\n----------------------------------------');
 
     try {
