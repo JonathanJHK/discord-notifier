@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
   schedule:
-    # 15:30 BRT = 18:30 UTC
-    - cron: '30 18 * * *'
+    # 16:30 BRT = 19:30 UTC
+    - cron: '30 19 * * *'
 
 concurrency:
   group: discord-notifier-state
