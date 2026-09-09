@@ -1,40 +1,42 @@
-# 🎬🎌 Discord Notifier
+# 🎬🎌📚 Discord Notifier
 
 ![CI](https://github.com/JonathanJHK/discord-notifier/actions/workflows/ci.yml/badge.svg)
-![Movie Notifier](https://github.com/JonathanJHK/discord-notifier/actions/workflows/movies.yml/badge.svg)
-![Anime Notifier](https://github.com/JonathanJHK/discord-notifier/actions/workflows/anime.yml/badge.svg)
+![Movies](https://github.com/JonathanJHK/discord-notifier/actions/workflows/movies.yml/badge.svg)
+![Anime](https://github.com/JonathanJHK/discord-notifier/actions/workflows/anime.yml/badge.svg)
+![Manga](https://github.com/JonathanJHK/discord-notifier/actions/workflows/manga.yml/badge.svg)
 
 Serviço automatizado de notificações para Discord desenvolvido em **Node.js + TypeScript**.
 
 O projeto acompanha:
 
 - 🎬 estreias de filmes nos cinemas brasileiros;
-- 🎌 lançamento de novos episódios legendados de animes;
-- 🇧🇷 tradução automática das sinopses de anime para português do Brasil.
+- 🎌 novos episódios legendados de animes;
+- 📚 novas obras de mangá que iniciaram serialização recentemente.
 
-Os dados são obtidos através das APIs do **TMDB** e **AnimeSchedule.net**, processados pela aplicação e enviados para canais específicos do Discord através de **webhooks**.
-
-A execução em produção é automatizada com **GitHub Actions**, com um **Cloudflare Worker atuando como scheduler de contingência** caso uma execução agendada do GitHub não ocorra como esperado.
+As notificações são executadas automaticamente através de **GitHub Actions**, com um **Cloudflare Worker atuando como scheduler de contingência** caso uma execução agendada não seja iniciada corretamente.
 
 ---
 
-## ✨ Funcionalidades
+# ✨ Funcionalidades
 
-### 🎬 Movie Release Notifier
+## 🎬 Movie Release Notifier
 
-O Movie Notifier acompanha lançamentos cinematográficos disponíveis no Brasil.
+Responsável por acompanhar estreias de filmes disponíveis nos cinemas brasileiros.
 
-Principais funcionalidades:
+### Funcionalidades
 
-- consulta estreias de filmes nos cinemas brasileiros;
-- considera uma janela retroativa de segurança;
-- suporta paginação dos resultados retornados pelo TMDB;
-- busca informações detalhadas dos filmes;
-- prioriza trailers disponíveis em português;
-- utiliza trailer em inglês como fallback;
-- envia notificações através de embeds formatados do Discord;
-- mantém estado persistente para impedir notificações duplicadas;
-- permite recuperar lançamentos caso uma execução anterior falhe.
+- consulta lançamentos através da API do **TMDB**;
+- utiliza `region=BR`;
+- considera lançamentos teatrais;
+- utiliza uma janela retroativa para recuperar possíveis execuções perdidas;
+- suporta paginação;
+- consulta detalhes adicionais de cada filme;
+- busca trailers;
+- prioriza trailers em português;
+- utiliza inglês como fallback;
+- envia embeds formatados para o Discord;
+- evita notificações duplicadas;
+- tenta novamente itens que falharam anteriormente.
 
 As notificações podem incluir:
 
@@ -52,26 +54,25 @@ As notificações podem incluir:
 
 ---
 
-### 🎌 Anime Episode Notifier
+## 🎌 Anime Episode Notifier
 
-O Anime Notifier acompanha novos episódios legendados utilizando a API v3 do **AnimeSchedule.net**.
+Responsável por acompanhar novos episódios legendados através da **AnimeSchedule API v3**.
 
-Principais funcionalidades:
+### Funcionalidades
 
-- consulta o timetable de lançamentos;
-- considera episódios lançados nas últimas 24 horas;
-- processa apenas lançamentos `SUB`;
-- busca informações adicionais do anime;
-- utiliza os dados básicos do timetable caso a consulta de detalhes falhe;
-- identifica cada episódio através de uma chave única;
+- consulta o timetable do AnimeSchedule;
+- considera apenas lançamentos `SUB`;
+- utiliza uma janela retroativa de 24 horas;
+- busca detalhes adicionais da obra;
+- mantém fallback para os dados básicos do timetable;
+- utiliza identificadores únicos por episódio;
 - evita notificações duplicadas;
-- mantém cache dos detalhes durante a mesma execução;
-- traduz automaticamente sinopses para português do Brasil.
+- traduz sinopses automaticamente para português do Brasil;
+- mantém cache persistente das traduções.
 
 As notificações podem incluir:
 
 - título;
-- título romaji;
 - episódio;
 - horário de lançamento;
 - duração;
@@ -86,171 +87,224 @@ As notificações podem incluir:
 
 ---
 
-## 🇧🇷 Tradução de sinopses
+## 📚 Manga Release Notifier
 
-As descrições dos animes são traduzidas automaticamente utilizando o **Lara Translate**.
+Responsável por detectar **novas obras que começaram a ser serializadas recentemente**.
 
-O texto original completo é enviado para tradução.
+O objetivo não é acompanhar:
 
-Não é realizado truncamento da sinopse antes da chamada à API.
+- capítulos novos;
+- volumes novos;
+- atualizações de obras antigas.
 
-```text
-AnimeSchedule
-      ↓
-sinopse original
-      ↓
-cache de tradução
-   ┌──────┴──────┐
-   │             │
-existe         não existe
-   │             │
-   │       Lara Translate
-   │             │
-   │           PT-BR
-   │             ↓
-   │       salva no cache
-   │             │
-   └──────┬──────┘
-          ↓
-       Discord
-```
+O notifier procura apenas por **novas serializações**.
 
-### Cache de traduções
+### Providers
 
-As traduções são persistidas em:
+A descoberta utiliza dois providers:
 
 ```text
-data/anime-translations.json
+Tenrai
+  ↓ falhou
+jikan-edge
 ```
 
-Cada entrada possui:
+O **Tenrai** é utilizado como provider principal.
 
-- identificador do anime;
-- hash SHA-256 da descrição original;
-- tradução em português.
+Caso ele esteja indisponível, o sistema utiliza automaticamente o **jikan-edge** como fallback.
 
-Exemplo conceitual:
+Os dois providers são normalizados para uma interface interna comum, evitando que o restante da aplicação dependa diretamente do formato de uma API específica.
 
-```json
-{
-  "anime-route": {
-    "sourceHash": "sha256...",
-    "translated": "Sinopse traduzida..."
-  }
-}
+### Critérios
+
+Uma obra é considerada candidata quando:
+
+```text
+type = Manga
+status = Publishing
+data inicial dentro da janela configurada
+MAL ID ainda não enviado
 ```
 
-Quando um novo episódio do mesmo anime é encontrado:
+A aplicação também realiza uma validação local da data para evitar falsos positivos retornados pelos providers.
+
+### Dados utilizados
+
+As notificações podem incluir:
+
+- título;
+- título japonês;
+- data de início;
+- autor;
+- revista/publicação;
+- gêneros;
+- demografia;
+- avaliação;
+- sinopse;
+- capa;
+- link para o MyAnimeList.
+
+A publicação recebe destaque no topo do embed, por exemplo:
+
+```text
+📰 WEEKLY SHOUNEN JUMP
+
+Nome do Mangá
+
+Sinopse...
+```
+
+---
+
+# 🇧🇷 Tradução de sinopses
+
+O projeto utiliza **Lara Translate** para traduzir sinopses de anime e mangá para português do Brasil.
+
+A tradução é considerada uma funcionalidade complementar.
+
+Uma falha no serviço de tradução **não impede o envio da notificação**.
 
 ```text
 sinopse original
        ↓
-calcula SHA-256
-       ↓
-hash igual ao cache?
+cache existe?
    ┌───────┴────────┐
    │                │
   sim              não
    │                │
-usa cache     traduz novamente
+ usa PT-BR      Lara Translate
+                    ↓
+                  PT-BR
+                    ↓
+               salva cache
+   │                │
+   └────────┬───────┘
+            ↓
+         Discord
 ```
 
-Isso reduz o consumo da API e evita traduzir a mesma sinopse a cada novo episódio.
-
-Caso o AnimeSchedule altere a descrição original, o hash muda e o cache é automaticamente invalidado.
-
-### Fallback da tradução
-
-A tradução é considerada uma funcionalidade complementar.
-
-Se o Lara estiver:
+Caso Lara esteja:
 
 - indisponível;
-- sem credenciais;
 - fora da cota;
+- sem credenciais;
 - retornando erro;
-- demorando além do timeout;
 
-o Anime Notifier continua funcionando normalmente e utiliza a descrição original.
-
-```text
-Lara disponível
-      ↓
-PT-BR
-      ↓
-Discord
-
-Lara indisponível
-      ↓
-descrição original
-      ↓
-Discord
-```
-
-Uma falha de tradução nunca deve impedir o envio de um episódio.
+o texto original é utilizado.
 
 ---
 
-## 🏗️ Arquitetura
+# 💾 Cache de traduções
+
+Anime e mangá possuem caches separados:
 
 ```text
-                         ┌───────────────────┐
-                         │ Cloudflare Worker │
-                         │     Fallback      │
-                         └─────────┬─────────┘
-                                   │
-                         verifica execuções
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │  GitHub Actions   │
-                         └─────────┬─────────┘
-                                   │
-                  ┌────────────────┴────────────────┐
-                  │                                 │
-                  ▼                                 ▼
-         ┌─────────────────┐              ┌───────────────────┐
-         │    TMDB API     │              │ AnimeSchedule API │
-         └────────┬────────┘              └─────────┬─────────┘
-                  │                                 │
-                  ▼                                 ▼
-         ┌─────────────────┐              ┌───────────────────┐
-         │ Movie Notifier  │              │  Anime Notifier   │
-         └────────┬────────┘              └─────────┬─────────┘
-                  │                                 │
-                  │                                 ▼
-                  │                       ┌───────────────────┐
-                  │                       │ Translation Cache │
-                  │                       └─────────┬─────────┘
-                  │                                 │
-                  │                        cache miss│
-                  │                                 ▼
-                  │                       ┌───────────────────┐
-                  │                       │  Lara Translate   │
-                  │                       └─────────┬─────────┘
-                  │                                 │
-                  └─────────────────┬───────────────┘
-                                    ▼
-                           ┌─────────────────┐
-                           │ Discord Webhook │
-                           └────────┬────────┘
-                                    ▼
-                           ┌─────────────────┐
-                           │     Discord     │
-                           └─────────────────┘
+data/
+├── anime-translations.json
+└── manga-translations.json
+```
+
+Cada tradução possui um hash SHA-256 da descrição original.
+
+Exemplo:
+
+```json
+{
+  "123456": {
+    "sourceHash": "a1b2c3...",
+    "translated": "Sinopse traduzida para português..."
+  }
+}
+```
+
+O funcionamento é:
+
+```text
+sinopse atual
+     ↓
+SHA-256
+     ↓
+hash igual ao cache?
+ ┌──────┴───────┐
+ │              │
+sim            não
+ │              │
+usa cache    traduz novamente
+```
+
+Isso permite detectar automaticamente alterações feitas posteriormente na sinopse original.
+
+As sinopses são enviadas **integralmente para tradução**.
+
+O truncamento utilizado nos embeds acontece apenas posteriormente para respeitar o layout e os limites do Discord.
+
+---
+
+# 🏗️ Arquitetura
+
+```text
+                           ┌────────────────────┐
+                           │ Cloudflare Worker  │
+                           │ Scheduler Fallback │
+                           └──────────┬─────────┘
+                                      │
+                              verifica workflows
+                                      │
+                                      ▼
+                           ┌────────────────────┐
+                           │   GitHub Actions   │
+                           └──────────┬─────────┘
+                                      │
+          ┌───────────────────────────┼───────────────────────────┐
+          │                           │                           │
+          ▼                           ▼                           ▼
+ ┌────────────────┐        ┌───────────────────┐        ┌─────────────────┐
+ │    TMDB API    │        │ AnimeSchedule API │        │      Tenrai     │
+ └───────┬────────┘        └─────────┬─────────┘        └────────┬────────┘
+         │                           │                            │
+         │                           │                   falhou   ▼
+         │                           │                  ┌─────────────────┐
+         │                           │                  │   jikan-edge    │
+         │                           │                  └────────┬────────┘
+         │                           │                            │
+         ▼                           ▼                            ▼
+ ┌────────────────┐        ┌──────────────────┐        ┌─────────────────┐
+ │ Movie Notifier │        │  Anime Notifier  │        │ Manga Notifier  │
+ └───────┬────────┘        └─────────┬────────┘        └────────┬────────┘
+         │                           │                            │
+         │                           ▼                            ▼
+         │                 ┌──────────────────┐        ┌──────────────────┐
+         │                 │Translation Cache │        │Translation Cache │
+         │                 └─────────┬────────┘        └─────────┬────────┘
+         │                           │                            │
+         │                      cache miss                   cache miss
+         │                           │                            │
+         │                           └────────────┬───────────────┘
+         │                                        ▼
+         │                              ┌──────────────────┐
+         │                              │  Lara Translate  │
+         │                              └─────────┬────────┘
+         │                                        │
+         └────────────────────────┬───────────────┘
+                                  ▼
+                         ┌─────────────────┐
+                         │ Discord Webhook │
+                         └────────┬────────┘
+                                  ▼
+                         ┌─────────────────┐
+                         │     Discord     │
+                         └─────────────────┘
 ```
 
 ---
 
 # 🛡️ Resiliência
 
-O projeto utiliza diferentes estratégias para reduzir falhas, evitar notificações duplicadas e recuperar execuções perdidas.
+O projeto possui diversas estratégias para evitar perda de notificações e reduzir falhas provocadas por serviços externos.
 
 ## Retry
 
-Chamadas externas possuem tratamento para falhas temporárias.
-
-Entre os mecanismos utilizados estão:
+As integrações utilizam mecanismos como:
 
 - timeout;
 - retry;
@@ -259,29 +313,44 @@ Entre os mecanismos utilizados estão:
 - tratamento de erros de rede;
 - tratamento de respostas `5xx`;
 - tratamento de rate limit `429`;
-- respeito ao `Retry-After` quando disponível.
+- utilização de `Retry-After` quando disponível.
 
 Erros considerados permanentes não são repetidos desnecessariamente.
 
 ---
 
-## Rate limit do Discord
+## Provider fallback — Mangá
 
-O envio através dos webhooks possui tratamento específico para respostas:
+O Manga Notifier não depende de uma única fonte.
 
 ```text
-429 Too Many Requests
+Tenrai
+  ↓
+sucesso?
+ ├── sim → continua
+ │
+ └── não
+       ↓
+   jikan-edge
 ```
 
-Quando o Discord informa um período de espera, o notifier aguarda antes de realizar uma nova tentativa.
+Um resultado vazio:
 
-Também existe um intervalo entre mensagens sucessivas para reduzir a possibilidade de atingir o limite do webhook.
+```text
+[]
+```
+
+é considerado uma resposta válida e **não ativa o fallback**.
+
+O fallback só ocorre quando existe uma falha real na comunicação ou processamento do provider.
 
 ---
 
-## Janela retroativa — Filmes
+## Janela retroativa
 
-O Movie Notifier consulta:
+### Filmes
+
+O Movie Notifier considera:
 
 ```text
 hoje
@@ -289,43 +358,36 @@ hoje
 2 dias anteriores
 ```
 
-Exemplo:
+### Anime
 
-```text
-Hoje
- │
- ├── hoje
- ├── ontem
- └── anteontem
-```
-
-Isso permite recuperar filmes que poderiam ter sido perdidos caso uma execução do GitHub Actions falhasse.
-
----
-
-## Janela retroativa — Anime
-
-O Anime Notifier considera episódios lançados durante as:
+O Anime Notifier considera episódios lançados nas:
 
 ```text
 últimas 24 horas
 ```
 
-Portanto, uma falha temporária do GitHub Actions ou AnimeSchedule não significa necessariamente a perda da notificação.
+### Mangás
+
+O Manga Notifier utiliza uma janela de dias recentes para localizar novas serializações.
+
+A validação da data também é realizada localmente.
+
+Essa estratégia permite recuperar itens caso uma execução automática tenha sido perdida.
 
 ---
 
-## Deduplicação
+# 🔁 Deduplicação
 
-Itens já enviados são armazenados em:
+Notificações enviadas são registradas em:
 
 ```text
 data/
-├── sent-movies.json
-└── sent-anime.json
+├── sent-anime.json
+├── sent-manga.json
+└── sent-movies.json
 ```
 
-O estado só é atualizado depois que o envio ao Discord é concluído.
+Um item só é registrado **depois que o Discord confirma o envio**.
 
 ```text
 API
@@ -336,7 +398,7 @@ Discord
  ↓
 envio confirmado
  ↓
-salva ID
+salva identificador
 ```
 
 Se o envio falhar:
@@ -353,82 +415,23 @@ nova tentativa
 
 ---
 
-# ☁️ Cloudflare Worker — Scheduler de contingência
+# 📚 Identificador de mangá
 
-Além do agendamento nativo do GitHub Actions, o projeto utiliza um **Cloudflare Worker como fallback**.
+Mangás utilizam o **MyAnimeList ID** como identificador único.
 
-O Worker não executa a lógica de filmes ou anime.
+Exemplo:
 
-Sua responsabilidade é apenas verificar se os workflows esperados foram executados e, quando necessário, solicitar uma execução manual através da API do GitHub.
-
-```text
-GitHub schedule
-      ↓
-workflow executado?
-   ┌──────┴───────┐
-   │              │
-  sim            não
-   │              │
-  fim      Cloudflare Worker
-                  ↓
-          workflow_dispatch
-                  ↓
-           GitHub Actions
+```json
+[123456, 789012]
 ```
 
-Essa abordagem mantém toda a lógica da aplicação centralizada no GitHub Actions.
-
-O Cloudflare funciona apenas como uma segunda camada de agendamento.
-
----
-
-## Por que utilizar um fallback?
-
-Workflows agendados do GitHub Actions podem eventualmente sofrer atraso ou não iniciar no horário esperado.
-
-Com o Worker:
-
-```text
-GitHub Actions
-     +
-Cloudflare Cron
-     +
-janela retroativa
-     +
-deduplicação
-```
-
-o sistema possui múltiplas camadas de proteção contra perda de notificações.
-
----
-
-## Segurança do Worker
-
-O Cloudflare não recebe:
-
-```text
-TMDB_ACCESS_TOKEN
-ANIME_SCHEDULE_TOKEN
-LARA_ACCESS_KEY_ID
-LARA_ACCESS_KEY_SECRET
-DISCORD_MOVIES_WEBHOOK_URL
-DISCORD_ANIME_WEBHOOK_URL
-```
-
-Essas credenciais permanecem no GitHub.
-
-O Worker possui somente o acesso mínimo necessário para:
-
-- consultar execuções dos workflows;
-- disparar `workflow_dispatch` quando necessário.
-
-As credenciais utilizadas pelo Worker são armazenadas através dos Secrets do Cloudflare.
+Como Tenrai e jikan-edge utilizam dados baseados no MyAnimeList, o mesmo identificador funciona independentemente do provider utilizado.
 
 ---
 
 # 🔒 Concorrência
 
-Os workflows responsáveis por filmes e animes utilizam o mesmo grupo de concorrência:
+Os workflows que modificam arquivos de estado compartilham o mesmo grupo:
 
 ```yaml
 concurrency:
@@ -436,69 +439,102 @@ concurrency:
   cancel-in-progress: false
 ```
 
-Isso evita que dois processos que alteram os arquivos de estado executem simultaneamente.
+Isso evita que dois processos façam alterações simultâneas nos arquivos JSON.
 
 ```text
-Movie Workflow ──┐
-                 ├── discord-notifier-state
-Anime Workflow ──┘
+movies.yml ─┐
+anime.yml  ─┼─ discord-notifier-state
+manga.yml  ─┘
 ```
 
-Se um estiver rodando, o outro aguarda.
+---
+
+# ☁️ Cloudflare Worker
+
+Além do scheduler nativo do GitHub Actions, o projeto possui um **Cloudflare Worker funcionando como fallback**.
+
+O Worker não executa a aplicação.
+
+Ele apenas verifica se o workflow esperado foi criado pelo GitHub.
+
+```text
+GitHub schedule
+      ↓
+workflow apareceu?
+  ┌──────┴───────┐
+  │              │
+ sim            não
+  │              │
+ fim      Cloudflare Worker
+                  ↓
+          workflow_dispatch
+                  ↓
+           GitHub Actions
+```
+
+O Worker também verifica execuções que:
+
+- falharam;
+- foram canceladas;
+- terminaram de maneira anormal.
+
+Execuções que ainda estão:
+
+```text
+queued
+in_progress
+waiting
+```
+
+não são duplicadas.
+
+---
+
+## Segurança do Cloudflare Worker
+
+O Worker possui apenas as credenciais necessárias para acessar a API do GitHub.
+
+Ele não possui acesso a:
+
+```text
+TMDB_ACCESS_TOKEN
+ANIME_SCHEDULE_TOKEN
+
+DISCORD_MOVIES_WEBHOOK_URL
+DISCORD_ANIME_WEBHOOK_URL
+DISCORD_MANGA_WEBHOOK_URL
+
+LARA_ACCESS_KEY_ID
+LARA_ACCESS_KEY_SECRET
+```
+
+Esses dados permanecem armazenados nos GitHub Secrets.
 
 ---
 
 # 💾 Persistência
 
-O projeto não necessita de banco de dados.
+O projeto propositalmente não utiliza banco de dados.
 
-O estado mínimo necessário é versionado através de arquivos JSON:
+O estado mínimo necessário é armazenado em arquivos JSON versionados:
 
 ```text
 data/
 ├── anime-translations.json
+├── manga-translations.json
 ├── sent-anime.json
+├── sent-manga.json
 └── sent-movies.json
 ```
 
-### `sent-movies.json`
-
-Armazena os IDs dos filmes já notificados.
-
-### `sent-anime.json`
-
-Armazena identificadores dos episódios já enviados.
-
-Um identificador de episódio segue conceitualmente:
+Depois de uma execução com alterações:
 
 ```text
-anime-route:air-type:episode
-```
-
-Exemplo:
-
-```text
-anime-example:sub:10
-```
-
-### `anime-translations.json`
-
-Armazena traduções das sinopses juntamente com o hash da descrição original.
-
----
-
-# 🔄 Atualização automática do estado
-
-Quando uma execução envia novas notificações, os arquivos alterados são commitados automaticamente pelo GitHub Actions.
-
-Fluxo:
-
-```text
-execução
+workflow
    ↓
-novo item enviado
+notificação enviada
    ↓
-arquivo JSON alterado
+JSON alterado
    ↓
 git add
    ↓
@@ -509,7 +545,7 @@ git pull --rebase
 git push
 ```
 
-Isso permite manter persistência sem banco de dados ou infraestrutura adicional.
+Para o volume atual do projeto, essa abordagem reduz infraestrutura e manutenção.
 
 ---
 
@@ -522,11 +558,14 @@ discord-notifier/
 │   └── workflows/
 │       ├── anime.yml
 │       ├── ci.yml
+│       ├── manga.yml
 │       └── movies.yml
 │
 ├── data/
 │   ├── anime-translations.json
+│   ├── manga-translations.json
 │   ├── sent-anime.json
+│   ├── sent-manga.json
 │   └── sent-movies.json
 │
 ├── references/
@@ -535,7 +574,6 @@ discord-notifier/
 │   └── anime-rss.service.ts
 │
 ├── src/
-│   │
 │   ├── anime/
 │   │   ├── anime-schedule.service.ts
 │   │   ├── anime.embed.ts
@@ -550,6 +588,21 @@ discord-notifier/
 │   │
 │   ├── discord/
 │   │   └── webhook.service.ts
+│   │
+│   ├── manga/
+│   │   ├── providers/
+│   │   │   ├── jikan-edge.provider.ts
+│   │   │   ├── manga-provider.ts
+│   │   │   ├── provider-http.ts
+│   │   │   └── tenrai.provider.ts
+│   │   │
+│   │   ├── index.ts
+│   │   ├── manga.embed.ts
+│   │   ├── manga.mapper.ts
+│   │   ├── manga.service.ts
+│   │   ├── manga.state.ts
+│   │   ├── manga.translation-cache.ts
+│   │   └── manga.translation.ts
 │   │
 │   ├── movies/
 │   │   ├── movie.embed.ts
@@ -571,6 +624,11 @@ discord-notifier/
 │   ├── anime.translation-cache.test.ts
 │   ├── anime.translation.test.ts
 │   ├── date.test.ts
+│   ├── manga.mapper.test.ts
+│   ├── manga.service.test.ts
+│   ├── manga.state.test.ts
+│   ├── manga.translation-cache.test.ts
+│   ├── manga.translation.test.ts
 │   └── movie.mapper.test.ts
 │
 ├── .env.example
@@ -591,9 +649,9 @@ A pasta:
 references/
 ```
 
-mantém implementações utilizadas durante a evolução do Anime Notifier.
+mantém implementações que foram utilizadas durante o desenvolvimento, mas não fazem mais parte da solução ativa.
 
-Atualmente são preservadas como referência:
+Atualmente inclui:
 
 ### AniList GraphQL
 
@@ -601,31 +659,19 @@ Atualmente são preservadas como referência:
 references/anilist.service.ts
 ```
 
-Implementação experimental utilizando a API GraphQL do AniList.
-
 ### AnimeSchedule RSS
 
 ```text
 references/anime-rss.service.ts
 ```
 
-Implementação anterior baseada no feed RSS do AnimeSchedule.
+Esses arquivos são mantidos apenas como referência técnica.
 
-Esses arquivos não fazem parte da implementação utilizada atualmente em produção.
-
-A fonte principal de dados de anime é:
-
-```text
-src/anime/anime-schedule.service.ts
-```
-
-utilizando a **AnimeSchedule API v3**.
+A implementação ativa utiliza a **AnimeSchedule API v3**.
 
 ---
 
 # 🛠️ Tecnologias
-
-Principais tecnologias utilizadas:
 
 - Node.js 22
 - TypeScript
@@ -635,38 +681,31 @@ Principais tecnologias utilizadas:
 - Vitest
 - Discord Webhooks
 - TMDB API
-- AnimeSchedule.net API v3
+- AnimeSchedule API v3
+- Tenrai API
+- jikan-edge
 - Lara Translate
 - `@translated/lara`
 - dotenv
 
 ---
 
-# ⚙️ Configuração local
+# ⚙️ Configuração
 
-## 1. Clone o projeto
+## Clone
 
 ```bash
 git clone https://github.com/JonathanJHK/discord-notifier.git
-```
-
-Entre na pasta:
-
-```bash
 cd discord-notifier
 ```
 
----
-
-## 2. Instale as dependências
+## Dependências
 
 ```bash
 npm install
 ```
 
----
-
-## 3. Configure as variáveis de ambiente
+## Ambiente
 
 Crie:
 
@@ -674,13 +713,7 @@ Crie:
 .env
 ```
 
-a partir de:
-
-```text
-.env.example
-```
-
-Configure:
+utilizando `.env.example` como referência.
 
 ```env
 TMDB_ACCESS_TOKEN=
@@ -689,73 +722,81 @@ DISCORD_MOVIES_WEBHOOK_URL=
 ANIME_SCHEDULE_TOKEN=
 DISCORD_ANIME_WEBHOOK_URL=
 
+DISCORD_MANGA_WEBHOOK_URL=
+
 LARA_ACCESS_KEY_ID=
 LARA_ACCESS_KEY_SECRET=
 ```
 
-Nunca envie o arquivo `.env` para o GitHub.
+Nunca envie o `.env` para o repositório.
 
 ---
 
 # 🔑 Variáveis de ambiente
 
-| Variável                     | Descrição                                             |
-| ---------------------------- | ----------------------------------------------------- |
-| `TMDB_ACCESS_TOKEN`          | Token de leitura utilizado para acessar a API do TMDB |
-| `DISCORD_MOVIES_WEBHOOK_URL` | Webhook do canal de notificações de filmes            |
-| `ANIME_SCHEDULE_TOKEN`       | Application Token utilizado na AnimeSchedule API v3   |
-| `DISCORD_ANIME_WEBHOOK_URL`  | Webhook do canal de notificações de anime             |
-| `LARA_ACCESS_KEY_ID`         | Access Key ID utilizado pelo Lara Translate           |
-| `LARA_ACCESS_KEY_SECRET`     | Secret associado à credencial do Lara Translate       |
+| Variável                     | Utilização                  |
+| ---------------------------- | --------------------------- |
+| `TMDB_ACCESS_TOKEN`          | Autenticação na API do TMDB |
+| `DISCORD_MOVIES_WEBHOOK_URL` | Canal de filmes             |
+| `ANIME_SCHEDULE_TOKEN`       | AnimeSchedule API v3        |
+| `DISCORD_ANIME_WEBHOOK_URL`  | Canal de anime              |
+| `DISCORD_MANGA_WEBHOOK_URL`  | Canal de mangás             |
+| `LARA_ACCESS_KEY_ID`         | Lara Translate              |
+| `LARA_ACCESS_KEY_SECRET`     | Lara Translate              |
+
+Tenrai e jikan-edge não necessitam de credenciais na configuração atual.
 
 ---
 
 # ▶️ Execução
 
-## Filmes — desenvolvimento
+## Filmes
+
+Desenvolvimento:
 
 ```bash
 npm run dev
 ```
 
----
-
-## Filmes — produção
-
-Compile:
+Produção:
 
 ```bash
 npm run build
-```
-
-Execute:
-
-```bash
 npm start
 ```
 
 ---
 
-## Anime — desenvolvimento
+## Anime
+
+Desenvolvimento:
 
 ```bash
 npm run anime:dev
 ```
 
----
-
-## Anime — produção
-
-Compile:
+Produção:
 
 ```bash
 npm run build
+npm run anime:start
 ```
 
-Execute:
+---
+
+## Mangás
+
+Desenvolvimento:
 
 ```bash
-npm run anime:start
+npm run manga:dev
+```
+
+Produção:
+
+```bash
+npm run build
+npm run manga:start
 ```
 
 ---
@@ -763,8 +804,6 @@ npm run anime:start
 # 🧪 Testes
 
 O projeto utiliza **Vitest**.
-
-Execute todos os testes:
 
 ```bash
 npm test
@@ -776,57 +815,51 @@ Modo watch:
 npm run test:watch
 ```
 
-Também é possível validar a compilação TypeScript:
+Validar compilação:
 
 ```bash
 npm run build
 ```
 
-Os testes cobrem principalmente:
+A suíte cobre funcionalidades como:
 
 - utilitários de data;
-- mapeamento de filmes;
-- mapeamento de anime;
-- fallbacks de dados;
-- geração de identificadores de deduplicação;
+- mapper de filmes;
+- mapper de anime;
+- mapper de mangás;
+- deduplicação;
+- estado do Manga Notifier;
 - cache de traduções;
-- recuperação de tradução existente;
-- cache miss;
-- invalidação de tradução quando a descrição original muda;
-- fallback quando o Lara Translate está indisponível;
-- falhas de persistência do cache.
+- invalidação por SHA-256;
+- fallback da tradução;
+- ausência de descrição;
+- falha ao persistir cache;
+- fallback Tenrai → jikan-edge;
+- busca de detalhes com provider secundário.
 
-As chamadas ao Lara Translate são mockadas nos testes automatizados.
+Chamadas externas são mockadas nos testes.
 
-Portanto:
+Portanto, a suíte não deve:
 
-```text
-npm test
-```
-
-não deve consumir a cota da API de tradução.
+- consumir a API do Lara;
+- consultar Tenrai;
+- consultar jikan-edge;
+- chamar o Discord.
 
 ---
 
 # ✅ CI
 
-O projeto possui integração contínua através de:
+O workflow:
 
 ```text
 .github/workflows/ci.yml
 ```
 
-O workflow é executado em:
-
-- pushes para `main`;
-- pull requests direcionados para `main`.
-
-Fluxo:
+executa validação automática em pushes e pull requests.
 
 ```text
 Checkout
-   ↓
-Setup Node.js
    ↓
 npm ci
    ↓
@@ -837,24 +870,15 @@ npm test
 
 ---
 
-# ⏰ GitHub Actions
+# ⏰ Workflows
 
-## 🎬 Movie Release Notifier
-
-Workflow:
+## Filmes
 
 ```text
 .github/workflows/movies.yml
 ```
 
-Execuções programadas:
-
-```text
-09:00 BRT
-18:00 BRT
-```
-
-O workflow também pode ser iniciado manualmente através de:
+Executa automaticamente e também suporta:
 
 ```text
 workflow_dispatch
@@ -862,38 +886,40 @@ workflow_dispatch
 
 ---
 
-## 🎌 Anime Episode Notifier
-
-Workflow:
+## Anime
 
 ```text
 .github/workflows/anime.yml
 ```
 
-Execução:
+Executado periodicamente e também suporta execução manual.
+
+---
+
+## Mangás
 
 ```text
-a cada 2 horas
+.github/workflows/manga.yml
 ```
 
-Também suporta:
+Executado diariamente e também suporta:
 
 ```text
 workflow_dispatch
 ```
 
-O workflow persiste automaticamente:
+O estado persistido inclui:
 
 ```text
-data/sent-anime.json
-data/anime-translations.json
+data/sent-manga.json
+data/manga-translations.json
 ```
 
 ---
 
 # 🔐 GitHub Secrets
 
-Os workflows utilizam os seguintes Repository Secrets:
+Os workflows utilizam:
 
 ```text
 TMDB_ACCESS_TOKEN
@@ -902,73 +928,13 @@ DISCORD_MOVIES_WEBHOOK_URL
 ANIME_SCHEDULE_TOKEN
 DISCORD_ANIME_WEBHOOK_URL
 
+DISCORD_MANGA_WEBHOOK_URL
+
 LARA_ACCESS_KEY_ID
 LARA_ACCESS_KEY_SECRET
 ```
 
-Nenhuma dessas credenciais deve ser armazenada diretamente no código.
-
----
-
-# ☁️ Configuração conceitual do Cloudflare
-
-O Worker utilizado como fallback possui configuração separada da aplicação principal.
-
-Ele precisa somente das informações necessárias para acessar a API do GitHub.
-
-Exemplo conceitual:
-
-```text
-Cloudflare Worker
-
-Secret
-└── GitHub access token
-
-Variables
-├── repository owner
-└── repository name
-```
-
-O token utilizado deve possuir apenas as permissões mínimas necessárias para consultar e disparar workflows.
-
----
-
-# 🔁 Fluxo completo de contingência
-
-A arquitetura final de execução funciona em camadas.
-
-```text
-1. GitHub Actions agenda workflow
-             ↓
-2. workflow executa normalmente
-             ↓
-3. notifier consulta API
-             ↓
-4. processa dados
-             ↓
-5. envia ao Discord
-             ↓
-6. persiste estado
-```
-
-Caso a execução esperada não aconteça:
-
-```text
-Cloudflare Cron
-      ↓
-verifica GitHub Actions
-      ↓
-execução recente encontrada?
-   ┌───────┴────────┐
-   │                │
-  sim              não
-   │                │
-  fim       workflow_dispatch
-                     ↓
-              GitHub Actions
-```
-
-Mesmo que uma execução seja repetida, a camada de deduplicação impede que itens já processados sejam enviados novamente.
+Nenhuma dessas credenciais deve estar diretamente no código.
 
 ---
 
@@ -987,11 +953,13 @@ Jitter
 +
 Rate Limit Handling
 +
+Provider Fallback
++
 Janela Retroativa
 +
-Persistência
-+
 Deduplicação
++
+Persistência
 +
 Concurrency
 +
@@ -999,10 +967,10 @@ Translation Cache
 +
 GitHub Actions
 +
-Cloudflare Fallback
+Cloudflare Scheduler Fallback
++
+Testes Automatizados
 ```
-
-Isso permite manter a solução simples, sem banco de dados ou servidor próprio, mas ainda tolerante a diversos tipos de falhas.
 
 ---
 
@@ -1010,20 +978,7 @@ Isso permite manter a solução simples, sem banco de dados ou servidor próprio
 
 ## TMDB
 
-Os dados relacionados a filmes são fornecidos pela API do:
-
-**The Movie Database — TMDB**
-
-São utilizados dados como:
-
-- títulos;
-- sinopses;
-- imagens;
-- gêneros;
-- duração;
-- avaliação;
-- trailers;
-- datas de lançamento.
+Utilizado para informações de filmes.
 
 > This product uses the TMDB API but is not endorsed or certified by TMDB.
 
@@ -1031,111 +986,70 @@ São utilizados dados como:
 
 ## AnimeSchedule.net
 
-Os dados de anime são obtidos através da:
+Utilizado para dados de episódios e metadados de anime.
 
-**AnimeSchedule.net API v3**
+---
 
-São utilizados dados como:
+## Tenrai
 
-- timetable;
-- episódios;
-- datas e horários;
-- títulos;
-- gêneros;
-- duração;
-- imagens;
-- serviços de streaming;
-- links externos;
-- descrições.
+Provider principal utilizado para descoberta e consulta de informações de mangá.
+
+---
+
+## jikan-edge
+
+Provider secundário utilizado como fallback caso o Tenrai esteja indisponível.
 
 ---
 
 ## Lara Translate
 
-O **Lara Translate** é utilizado para traduzir as sinopses obtidas pelo AnimeSchedule para português do Brasil.
-
-A tradução possui cache persistente para reduzir chamadas repetidas.
+Utilizado para tradução das sinopses para português do Brasil.
 
 ---
 
-# 🔐 Segurança
+# 🎯 Objetivos técnicos
 
-O projeto segue algumas regras para reduzir exposição de credenciais:
-
-- `.env` não é versionado;
-- tokens não são inseridos diretamente no código;
-- webhooks do Discord permanecem em Secrets;
-- credenciais do Lara permanecem em Secrets;
-- token utilizado pelo Cloudflare possui acesso limitado;
-- o Worker não recebe os tokens do TMDB, AnimeSchedule ou Discord;
-- secrets de produção são armazenados nas plataformas responsáveis pela execução.
-
----
-
-# 🚫 Banco de dados
-
-O projeto propositalmente não utiliza banco de dados.
-
-Para o volume atual de notificações, arquivos JSON versionados são suficientes para manter:
-
-```text
-IDs enviados
-+
-cache de tradução
-```
-
-Isso reduz:
-
-- custo;
-- infraestrutura;
-- manutenção;
-- dependências externas;
-- complexidade operacional.
-
----
-
-# 📌 Objetivos técnicos do projeto
-
-Além da funcionalidade de notificações, o projeto explora conceitos como:
+Além da funcionalidade de notificações, o projeto explora:
 
 - integração com APIs REST;
-- consumo de APIs autenticadas;
+- abstração de providers;
+- provider fallback;
 - webhooks;
-- tratamento de rate limits;
 - retry;
 - exponential backoff;
+- rate limiting;
 - idempotência;
 - deduplicação;
-- persistência simples;
-- processamento assíncrono;
 - cache;
-- hashing;
-- fallbacks;
-- CI;
+- hashing SHA-256;
+- processamento assíncrono;
+- persistência simples;
 - automação;
-- agendamento;
-- tolerância a falhas;
+- CI;
+- Cron Jobs;
 - GitHub Actions;
 - Cloudflare Workers;
+- tolerância a falhas;
 - testes unitários.
 
 ---
 
 # 🚀 Possíveis evoluções
 
-Algumas funcionalidades que podem ser adicionadas futuramente:
+Algumas ideias futuras:
 
 - notificações de séries;
 - notificações de doramas;
-- filtros personalizados por anime;
+- novos providers de mangá;
+- filtros por revista;
 - filtros por gênero;
-- cargos específicos do Discord;
-- menções opcionais por categoria;
-- novos provedores de dados;
-- métricas de execução;
-- observabilidade;
-- dashboard;
-- persistência externa caso o volume cresça.
+- filtros por demografia;
+- cargos opcionais do Discord;
+- menções específicas por categoria;
+- dashboard de execução;
+- observabilidade e métricas;
+- persistência externa caso o volume aumente.
 
 ---
 
@@ -1149,10 +1063,6 @@ Este projeto utiliza a licença **ISC**.
 
 Desenvolvido por **Jonathan Heidy Kinjo**.
 
-GitHub:
+GitHub: [@JonathanJHK](https://github.com/JonathanJHK)
 
-[@JonathanJHK](https://github.com/JonathanJHK)
-
-Repositório:
-
-[JonathanJHK/discord-notifier](https://github.com/JonathanJHK/discord-notifier)
+Repositório: [JonathanJHK/discord-notifier](https://github.com/JonathanJHK/discord-notifier)
