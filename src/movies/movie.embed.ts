@@ -1,4 +1,7 @@
+import { buildEmbedMedia } from '../discord/embed-media.js';
 import type { MovieNotification } from './movie.mapper.js';
+
+import type { EmbedCoverMode } from '../discord/embed-media.js';
 
 // Converte a data no formato ISO para uma visualização amigável no Brasil.
 function formatDate(date: string): string {
@@ -40,7 +43,10 @@ function truncate(text: string, maxLength: number): string {
 }
 
 // Cria o payload de embed do Discord com as informações do filme.
-export function createMovieEmbed(movie: MovieNotification) {
+export function createMovieEmbed(
+  movie: MovieNotification,
+  coverMode: EmbedCoverMode = 'image',
+) {
   // Monta exclusivamente a apresentação do filme, sem alterar os dados mapeados.
   // Concatena os gêneros para uma linha só, ou indica ausência.
   const genres =
@@ -84,6 +90,11 @@ export function createMovieEmbed(movie: MovieNotification) {
     });
   }
 
+  const media = buildEmbedMedia({
+    imageUrl: movie.backdropUrl ?? movie.posterUrl,
+    mode: coverMode,
+  });
+
   return {
     author: {
       name: '🍿 NOVA ESTREIA NOS CINEMAS',
@@ -102,11 +113,7 @@ export function createMovieEmbed(movie: MovieNotification) {
 
     fields,
 
-    thumbnail: movie.posterUrl
-      ? {
-          url: movie.posterUrl,
-        }
-      : undefined,
+    ...media,
 
     footer: {
       text: '🍿  COREIA DO LEO É CINEMA  •  Dados fornecidos pelo TMDB',

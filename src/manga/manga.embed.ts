@@ -1,3 +1,5 @@
+import type { EmbedCoverMode } from '../discord/embed-media.js';
+import { buildEmbedMedia } from '../discord/embed-media.js';
 import type { MangaNotification } from './manga.mapper.js';
 
 interface DiscordEmbedField {
@@ -21,6 +23,10 @@ interface DiscordEmbed {
   fields?: DiscordEmbedField[];
 
   thumbnail?: {
+    url: string;
+  };
+
+  image?: {
     url: string;
   };
 
@@ -58,7 +64,10 @@ function formatList(values: string[], fallback: string): string {
   return values.join(', ');
 }
 
-export function createMangaEmbed(manga: MangaNotification): DiscordEmbed {
+export function createMangaEmbed(
+  manga: MangaNotification,
+  coverMode: EmbedCoverMode = 'image',
+): DiscordEmbed {
   // A apresentação fica concentrada aqui para que o mapper permaneça livre de regras do Discord.
   const publication = formatList(
     manga.serializations,
@@ -110,27 +119,29 @@ export function createMangaEmbed(manga: MangaNotification): DiscordEmbed {
     });
   }
 
+  const media = buildEmbedMedia({
+    imageUrl: manga.imageUrl,
+    mode: coverMode,
+  });
+
   return {
     author: {
       name: `📰 ${publication.toUpperCase()}`,
     },
 
     title: manga.title,
+
     url: manga.malUrl,
 
     description:
       `${truncate(manga.synopsis, 1800)}\n\n` +
-      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 
     color: 0xe056fd,
 
     fields,
 
-    thumbnail: manga.imageUrl
-      ? {
-          url: manga.imageUrl,
-        }
-      : undefined,
+    ...media,
 
     footer: {
       text: '📚 Coreia do Leo • Dados: MyAnimeList via Tenrai/jikan-edge',

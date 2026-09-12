@@ -1,4 +1,7 @@
+import { buildEmbedMedia } from '../discord/embed-media.js';
 import type { AnimeNotification } from './anime.mapper.js';
+
+import type { EmbedCoverMode } from '../discord/embed-media.js';
 
 // Limita o texto da descrição para manter o embed dentro dos limites do Discord.
 function truncate(text: string, maxLength: number): string {
@@ -26,7 +29,10 @@ function formatDate(value: string): string {
 }
 
 // Monta o payload do embed do Discord com as principais informações do episódio.
-export function createAnimeEmbed(anime: AnimeNotification) {
+export function createAnimeEmbed(
+  anime: AnimeNotification,
+  coverMode: EmbedCoverMode = 'image',
+) {
   // O payload é montado separado do mapper para manter regras de apresentação isoladas.
   // Os campos em destaque ajudam a organizar a mensagem de forma visual.
   const fields = [
@@ -96,6 +102,11 @@ export function createAnimeEmbed(anime: AnimeNotification) {
     inline: false,
   });
 
+  const media = buildEmbedMedia({
+    imageUrl: anime.posterUrl,
+    mode: coverMode,
+  });
+
   return {
     author: {
       name: '🎌 NOVO EPISÓDIO LEGENDADO',
@@ -113,11 +124,7 @@ export function createAnimeEmbed(anime: AnimeNotification) {
 
     fields,
 
-    thumbnail: anime.posterUrl
-      ? {
-          url: anime.posterUrl,
-        }
-      : undefined,
+    ...media,
 
     footer: {
       text: '🎌 Coreia do Leo • Dados: AnimeSchedule.net',
